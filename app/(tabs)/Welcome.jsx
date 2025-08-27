@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { BottomSheetModal, BottomSheetModalProvider, BottomSheetView, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
+import { GestureHandlerRootView } from "react-native-gesture-handler";import { useCallback, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
 import { Dimensions, Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
   interpolate,
   useAnimatedScrollHandler,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
 } from 'react-native-reanimated';
 import SignupBottomSheet from '../../components/SignupBottomSheet.jsx';
+
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = width * 0.8;
 const ITEM_SPACING = (width - ITEM_WIDTH) / 2;
@@ -18,78 +22,106 @@ const data = [
   { image: require('../../assets/images/welcome/image_4.png') },
 ];
 
-export default function AnimatedSwiper() {
-  const [sheetVisible, setSheetVisible] = useState(false);
+export default function Welcome() {
+  const sheetRef = useRef(null);
+  const router = useRouter();
+  const [isOpen, setisOpen] = useState(true);
+  const snapPoints = ["40%"];
 
   const scrollX = useSharedValue(0);
+  
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollX.value = event.contentOffset.x;
     },
   });
 
+  const handleSnapPress = useCallback((index) => {                               
+    sheetRef.current?.present(index);
+    setisOpen(true);
+  }, []);
+
   const handleTermsPress = () => {
     Linking.openURL('https://www.example.com/terms').catch(() => {});
   };
 
-  return (
-    <View style={{ flex: 1, justifyContent: 'flex-start', paddingTop: 20 }}>
-      <View style={{ alignItems: 'center' }}>
-        <Animated.FlatList
-          data={data}
-          keyExtractor={(_, index) => index.toString()}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: ITEM_SPACING, paddingBottom: 0 }} // Ensure no bottom padding
-          snapToInterval={ITEM_WIDTH}
-          decelerationRate="fast"
-          onScroll={scrollHandler}
-          scrollEventThrottle={16}
-          renderItem={({ item, index }) => {
-            return <AnimatedItem item={item} index={index} scrollX={scrollX} />;
-          }}
-        />
-        <Dots data={data} scrollX={scrollX} />
-   {/* new UI: bold title, tagline, primary button, secondary button */}
-        <View style={styles.content}>
-          <Text style={styles.title}>Ready to join the Hunt?</Text>
-          <Text style={styles.tagline}>Make your Campus Life Alive with MetaCampus.</Text>
-
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={() => {
-                setSheetVisible(true);
-            }}
-          >
-            <Text style={styles.primaryButtonText}>Create Account</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={() => {
-            }}
-          >
-            <Text style={styles.secondaryButtonText}>Sign In</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={handleTermsPress} style={styles.termsContainer} activeOpacity={0.7}>
-            <Text style={styles.termsText}>
-              By continuing you agree to our <Text style={styles.termsLink}>Terms & Conditions</Text>
-            </Text>
-          </TouchableOpacity>
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View style={{ flex: 1, justifyContent: 'flex-start', paddingTop: 20 }}>
+          <View style={{ alignItems: 'center' }}>
+            <Animated.FlatList
+              data={data}
+              keyExtractor={(_, index) => index.toString()}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingHorizontal: ITEM_SPACING, paddingBottom: 0 }} // Ensure no bottom padding
+              snapToInterval={ITEM_WIDTH}
+              decelerationRate="fast"
+              onScroll={scrollHandler}
+              scrollEventThrottle={16}
+              renderItem={({ item, index }) => {
+                return <AnimatedItem item={item} index={index} scrollX={scrollX} />;
+              }}
+            />
+            <Dots data={data} scrollX={scrollX} />
+            <View style={styles.content}>
+              <Text style={styles.title}>Ready to join the Hunt?</Text>
+              <Text style={styles.tagline}>Make your Campus Life Alive with MetaCampus.</Text>
+  
+              <TouchableOpacity
+                style={styles.primaryButton}                                        // Create account button
+                onPress={() => handleSnapPress(0)}>
+                <Text style={styles.primaryButtonText}>Create Account</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.secondaryButton}
+                onPress={() => {
+                }}
+              > 
+                <Text style={styles.secondaryButtonText}>Sign In</Text>             
+              </TouchableOpacity>
+              <TouchableOpacity onPress={handleTermsPress} style={styles.termsContainer} activeOpacity={0.7}>     
+                <Text style={styles.termsText}>
+                  By continuing you agree to our <Text style={styles.termsLink}>Terms & Conditions</Text>
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          <BottomSheetModalProvider>
+            <BottomSheetModal
+              ref={sheetRef}
+              snapPoints={snapPoints}
+              enablePanDownToClose={true}
+              onDismiss={() => setisOpen(false)}
+              backdropComponent={(props) => (
+                <BottomSheetBackdrop                      // for darkening background
+                  {...props}
+                  appearsOnIndex={0}       
+                  disappearsOnIndex={-1}   
+                  opacity={0.45}           
+                  pressBehavior="close"    
+                />
+              )}
+            >
+              <BottomSheetView>
+                <SignupBottomSheet
+                  onPick={(role) => {
+                    if (role === 'student') {
+                      router.push('/(tabs)/studentcreate');
+                    } else {
+                      router.push('/(tabs)/orgcreate');
+                    } 
+                    sheetRef.current?.dismiss();
+                  }}
+                  onClose={() => sheetRef.current?.dismiss()}
+                />
+              </BottomSheetView>
+            </BottomSheetModal>
+          </BottomSheetModalProvider>
         </View>
-      </View>
-      
-      <SignupBottomSheet
-        visible={sheetVisible}
-        onRequestClose={() => setSheetVisible(false)}
-        onSelect={(type) => {
-          console.log('selected', type);
-          setSheetVisible(false);
-        }}
-      />
-    </View>
-  );
-}
+      </GestureHandlerRootView>
+    );
+  }
 
 function AnimatedItem({ item, index, scrollX }) {
   const animatedStyle = useAnimatedStyle(() => {
@@ -105,12 +137,12 @@ function AnimatedItem({ item, index, scrollX }) {
   });
 
   return (
-    <Animated.View style={[styles.item, animatedStyle]}>
+    <Animated.View style={[styles.item, animatedStyle]}>      
       <View style={styles.innerItem}>
         <Image
           source={item.image}
           style={styles.image}
-          resizeMode="cover"
+          resizeMode="cover" 
         />
       </View>
     </Animated.View>
