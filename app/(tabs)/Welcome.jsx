@@ -1,5 +1,6 @@
 import { BottomSheetModal, BottomSheetModalProvider, BottomSheetView, BottomSheetBackdrop } from "@gorhom/bottom-sheet";
-import { GestureHandlerRootView } from "react-native-gesture-handler";import { useCallback, useRef, useState } from 'react';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Dimensions, Image, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Animated, {
@@ -54,7 +55,7 @@ export default function Welcome() {
               keyExtractor={(_, index) => index.toString()}
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ paddingHorizontal: ITEM_SPACING, paddingBottom: 0 }} // Ensure no bottom padding
+              contentContainerStyle={{ paddingHorizontal: ITEM_SPACING, paddingBottom: 0 }} 
               snapToInterval={ITEM_WIDTH}
               decelerationRate="fast"
               onScroll={scrollHandler}
@@ -69,15 +70,14 @@ export default function Welcome() {
               <Text style={styles.tagline}>Make your Campus Life Alive with MetaCampus.</Text>
   
               <TouchableOpacity
-                style={styles.primaryButton}                                        // Create account button
+                style={styles.primaryButton}                                      
                 onPress={() => handleSnapPress(0)}>
                 <Text style={styles.primaryButtonText}>Create Account</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                onPress={() => {
-                }}
-              > 
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={() => router.push('/signin')}
+            > 
                 <Text style={styles.secondaryButtonText}>Sign In</Text>             
               </TouchableOpacity>
               <TouchableOpacity onPress={handleTermsPress} style={styles.termsContainer} activeOpacity={0.7}>     
@@ -106,12 +106,13 @@ export default function Welcome() {
               <BottomSheetView>
                 <SignupBottomSheet
                   onPick={(role) => {
-                    if (role === 'student') {
-                      router.push('/(tabs)/studentcreate');
-                    } else {
-                      router.push('/(tabs)/orgcreate');
-                    } 
+              
                     sheetRef.current?.dismiss();
+                    
+                    setTimeout(() => {
+                      if (role === 'student') router.push('/studcreate');
+                      else if (role === 'organization') router.push('/orgcreate');
+                    }, 220);
                   }}
                   onClose={() => sheetRef.current?.dismiss()}
                 />
